@@ -1,0 +1,41 @@
+import json
+import folium
+
+def print_route(path, places, dist):
+    route = [places[i].name for i in path]
+    total_km = sum(dist[path[i]][path[(i+1)%len(path)]] for i in range(len(path)))
+    print("Route:")
+    print(" -> ".join(route))
+    print(f"Total distance: {total_km:.2f} km")
+
+def export_geojson(path, places, filename="route.geojson"):
+    features = []
+    for i in range(len(path)):
+        p1 = places[path[i]]
+        p2 = places[(i+1) % len(path)] if i + 1 < len(path) else places[path[0]]
+        features.append({
+            "type": "Feature",
+            "geometry": {
+                "type": "LineString",
+                "coordinates": [[p1.lon, p1.lat], [p2.lon, p2.lat]]
+            },
+            "properties": {
+                "from": p1.name,
+                "to": p2.name
+            }
+        })
+    geojson = {"type": "FeatureCollection", "features": features}
+    with open(filename, "w", encoding='utf-8') as f:
+        json.dump(geojson, f, indent=2)
+
+def export_map(path, places, filename="route_map.html"):
+    start = places[path[0]]
+    fmap = folium.Map(location=[start.lat, start.lon], zoom_start=6)
+    for i in range(len(path)):
+        p = places[path[i]]
+        folium.Marker([p.lat, p.lon], tooltip=p.name).add_to(fmap)
+        if i < len(path) - 1:
+            p_next = places[path[i + 1]]
+            folium.PolyLine([[p.lat, p.lon], [p_next.lat, p_next.lon]], color='blue').add_to(fmap)
+    fmap.save(filename)
+
