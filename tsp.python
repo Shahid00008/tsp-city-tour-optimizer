@@ -1,0 +1,23 @@
+import argparse
+from utils import read_places, build_distance_matrix, greedy_tsp, two_opt, total_distance
+from io_helpers import print_route, export_geojson, export_map
+
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--csv", required=True)
+    parser.add_argument("--start", required=True)
+    parser.add_argument("--return", action="store_true")
+    return parser.parse_args()
+
+if __name__ == "__main__":
+    args = get_args()
+    places = read_places(args.csv)
+    dist = build_distance_matrix(places)
+    start_index = next((i for i, p in enumerate(places) if p.name == args.start), 0)
+    path = greedy_tsp(dist, start_index)
+    path = two_opt(path, dist)
+    if args.__dict__["return"]:
+        path.append(path[0])
+    print_route(path, places, dist)
+    export_geojson(path, places)
+    export_map(path, places)
